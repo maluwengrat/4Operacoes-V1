@@ -1,0 +1,313 @@
+using UnityEngine;
+
+public class MobileUI : MonoBehaviour
+{
+    public static MobileUI instance;
+
+    [Header("Forçar controles mobile mesmo em desktop (testes)")]
+    public bool forcarMobile = false;
+
+    private bool isMobile;
+    private PlayerController player;
+
+    private bool pressEsq = false;
+    private bool pressDir = false;
+    private bool pressAtira = false;
+
+    private int touchIdEsq = -1;
+    private int touchIdDir = -1;
+    private int touchIdAtira = -1;
+
+    // Texturas geradas por código
+    private Texture2D texCirculo;
+    private Texture2D texSetaEsq;
+    private Texture2D texSetaDir;
+    private Texture2D texFogo;
+
+    void Awake()
+    {
+        instance = this;
+        isMobile = forcarMobile;
+    }
+
+    void Start()
+    {
+        player = FindObjectOfType<PlayerController>();
+        GerarTexturas();
+    }
+
+    public void SetMobileFromJS(string valor)
+    {
+        if (valor == "1") isMobile = true;
+    }
+
+    void Update()
+    {
+        if (!isMobile) return;
+        if (player == null) player = FindObjectOfType<PlayerController>();
+        if (GameManager.instance != null && !GameManager.instance.JogoRodando()) return;
+        ProcessarTouch();
+    }
+
+    void ProcessarTouch()
+    {
+        bool novoEsq = false;
+        bool novoDir = false;
+        bool novoAtira = false;
+
+        CalcularRects(out Rect rEsq, out Rect rDir, out Rect rAtira);
+
+        for (int ti = 0; ti < Input.touchCount; ti++)
+        {
+            Touch touch = Input.GetTouch(ti);
+            Vector2 pos = new Vector2(touch.position.x, Screen.height - touch.position.y);
+
+            if (touch.phase == TouchPhase.Ended || touch.phase == TouchPhase.Canceled)
+            {
+                if (touch.fingerId == touchIdEsq) touchIdEsq = -1;
+                if (touch.fingerId == touchIdDir) touchIdDir = -1;
+                if (touch.fingerId == touchIdAtira) touchIdAtira = -1;
+                continue;
+            }
+
+            if (rEsq.Contains(pos))
+            {
+                novoEsq = true;
+                if (touchIdEsq == -1 && touch.phase == TouchPhase.Began)
+                    touchIdEsq = touch.fingerId;
+            }
+            if (rDir.Contains(pos))
+            {
+                novoDir = true;
+                if (touchIdDir == -1 && touch.phase == TouchPhase.Began)
+                    touchIdDir = touch.fingerId;
+            }
+            if (rAtira.Contains(pos))
+            {
+                novoAtira = true;
+                if (touchIdAtira == -1 && touch.phase == TouchPhase.Began)
+                {
+                    touchIdAtira = touch.fingerId;
+                    player?.PressionarAtira();
+                }
+            }
+        }
+
+        if (pressEsq != novoEsq) { pressEsq = novoEsq; player?.PressionarEsquerda(novoEsq); }
+        if (pressDir != novoDir) { pressDir = novoDir; player?.PressionarDireita(novoDir); }
+        pressAtira = novoAtira;
+    }
+
+    void CalcularRects(out Rect rEsq, out Rect rDir, out Rect rAtira)
+    {
+        float W = Screen.width;
+        float H = Screen.height;
+        float btnSize = Mathf.Clamp(Mathf.Min(W, H) * 0.28f, 120f, 200f);
+        float margem = btnSize * 0.15f;
+        float baseY = H - btnSize - margem;
+
+        rEsq = new Rect(margem, baseY, btnSize, btnSize);
+        rDir = new Rect(margem + btnSize + margem * 0.8f, baseY, btnSize, btnSize);
+        rAtira = new Rect(W - btnSize - margem, baseY, btnSize, btnSize);
+    }
+
+    // ── Desenho ───────────────────────────────────────────────────────
+
+    void OnGUI()
+    {
+        bool mostrar = isMobile
+                    && GameManager.instance != null
+                    && GameManager.instance.JogoRodando();
+        if (!mostrar) return;
+
+        CalcularRects(out Rect rEsq, out Rect rDir, out Rect rAtira);
+
+        DesenharBotaoSeta(rEsq, pressEsq, esquerda: true);
+        DesenharBotaoSeta(rDir, pressDir, esquerda: false);
+        DesenharBotaoAtira(rAtira, pressAtira);
+    }
+
+    void DesenharBotaoSeta(Rect r, bool pressionado, bool esquerda)
+    {
+        // Fundo circular
+        Color corFundo = pressionado
+            ? new Color(1f, 0.6f, 0.1f, 0.95f)
+            : new Color(0.15f, 0.15f, 0.15f, 0.75f);
+        Color corBorda = pressionado
+            ? new Color(1f, 0.85f, 0.3f, 1f)
+            : new Color(1f, 0.6f, 0.1f, 0.9f);
+
+        DesenharCirculo(r, corFundo, corBorda, espessuraBorda: 4f);
+
+        // Seta desenhada com triângulo GL-style via GUI matrix
+        float cx = r.x + r.width * 0.5f;
+        float cy = r.y + r.height * 0.5f;
+        float size = r.width * 0.32f;
+
+        Color corSeta = pressionado ? Color.white : new Color(1f, 0.75f, 0.2f);
+
+        // Triângulo da seta
+        Vector2 ponta = new Vector2(cx + (esquerda ? -size : size), cy);
+        Vector2 topoT = new Vector2(cx + (esquerda ? size * 0.5f : -size * 0.5f), cy - size * 0.85f);
+        Vector2 baseT = new Vector2(cx + (esquerda ? size * 0.5f : -size * 0.5f), cy + size * 0.85f);
+
+        DesenharTriangulo(ponta, topoT, baseT, corSeta);
+
+        // Barra vertical da seta (estilo ◀ com traço)
+        float barraX = esquerda
+            ? cx + size * 0.55f - size * 0.12f
+            : cx - size * 0.55f + size * 0.12f;
+        Rect barra = new Rect(barraX - size * 0.1f, cy - size * 0.8f, size * 0.22f, size * 1.6f);
+        DesenharRetanguloSolido(barra, corSeta);
+    }
+
+    void DesenharBotaoAtira(Rect r, bool pressionado)
+    {
+        // Fundo circular vermelho/laranja
+        Color corFundo = pressionado
+            ? new Color(1f, 0.2f, 0.1f, 0.95f)
+            : new Color(0.15f, 0.05f, 0.05f, 0.75f);
+        Color corBorda = pressionado
+            ? new Color(1f, 0.6f, 0.2f, 1f)
+            : new Color(1f, 0.25f, 0.1f, 0.9f);
+
+        DesenharCirculo(r, corFundo, corBorda, espessuraBorda: 4f);
+
+        float cx = r.x + r.width * 0.5f;
+        float cy = r.y + r.height * 0.5f;
+        float size = r.width * 0.28f;
+
+        Color corIcone = pressionado ? Color.white : new Color(1f, 0.5f, 0.2f);
+
+        // Míssil: corpo
+        Rect corpo = new Rect(cx - size * 0.18f, cy - size * 0.9f, size * 0.36f, size * 1.4f);
+        DesenharRetanguloSolido(corpo, corIcone);
+
+        // Ponta do míssil (triângulo)
+        Vector2 ptPonta = new Vector2(cx, cy - size * 0.9f - size * 0.6f);
+        Vector2 ptEsq = new Vector2(cx - size * 0.18f, cy - size * 0.9f);
+        Vector2 ptDir = new Vector2(cx + size * 0.18f, cy - size * 0.9f);
+        DesenharTriangulo(ptPonta, ptEsq, ptDir, corIcone);
+
+        // Asas laterais
+        Vector2 asaEsqTopo = new Vector2(cx - size * 0.18f, cy + size * 0.1f);
+        Vector2 asaEsqBase = new Vector2(cx - size * 0.18f, cy + size * 0.5f);
+        Vector2 asaEsqPont = new Vector2(cx - size * 0.6f, cy + size * 0.5f);
+        DesenharTriangulo(asaEsqTopo, asaEsqBase, asaEsqPont, corIcone);
+
+        Vector2 asaDirTopo = new Vector2(cx + size * 0.18f, cy + size * 0.1f);
+        Vector2 asaDirBase = new Vector2(cx + size * 0.18f, cy + size * 0.5f);
+        Vector2 asaDirPont = new Vector2(cx + size * 0.6f, cy + size * 0.5f);
+        DesenharTriangulo(asaDirTopo, asaDirBase, asaDirPont, corIcone);
+
+        // Chama do escapamento
+        Color corChama = pressionado
+            ? new Color(1f, 0.9f, 0.1f)
+            : new Color(1f, 0.55f, 0.05f);
+
+        Vector2 chamaBase1 = new Vector2(cx - size * 0.18f, cy + size * 0.5f);
+        Vector2 chamaBase2 = new Vector2(cx + size * 0.18f, cy + size * 0.5f);
+        Vector2 chamaPonta = new Vector2(cx, cy + size * 1.05f);
+        DesenharTriangulo(chamaBase1, chamaBase2, chamaPonta, corChama);
+    }
+
+    // ── Primitivas ────────────────────────────────────────────────────
+
+    void DesenharCirculo(Rect r, Color corFundo, Color corBorda, float espessuraBorda)
+    {
+        int res = 64;
+        float cx = r.x + r.width * 0.5f;
+        float cy = r.y + r.height * 0.5f;
+        float rad = r.width * 0.5f;
+
+        // Borda
+        DesenharDiscGL(cx, cy, rad, corBorda, res);
+        // Interior
+        DesenharDiscGL(cx, cy, rad - espessuraBorda, corFundo, res);
+    }
+
+    void DesenharDiscGL(float cx, float cy, float raio, Color cor, int segmentos)
+    {
+        if (Event.current.type != EventType.Repaint) return;
+
+        GL.PushMatrix();
+        // Y crescendo para baixo, igual ao sistema usado em CalcularRects/OnGUI
+        GL.LoadPixelMatrix(0, Screen.width, Screen.height, 0);
+        Material mat = ObterMaterialGL();
+        mat.SetPass(0);
+        GL.Begin(GL.TRIANGLES);
+        GL.Color(cor);
+
+        for (int i = 0; i < segmentos; i++)
+        {
+            float a1 = Mathf.PI * 2f * i / segmentos;
+            float a2 = Mathf.PI * 2f * (i + 1) / segmentos;
+            GL.Vertex3(cx, cy, 0);
+            GL.Vertex3(cx + Mathf.Cos(a1) * raio, cy + Mathf.Sin(a1) * raio, 0);
+            GL.Vertex3(cx + Mathf.Cos(a2) * raio, cy + Mathf.Sin(a2) * raio, 0);
+        }
+
+        GL.End();
+        GL.PopMatrix();
+    }
+
+    void DesenharTriangulo(Vector2 p1, Vector2 p2, Vector2 p3, Color cor)
+    {
+        if (Event.current.type != EventType.Repaint) return;
+
+        GL.PushMatrix();
+        // Y crescendo para baixo, igual ao sistema usado em CalcularRects/OnGUI
+        GL.LoadPixelMatrix(0, Screen.width, Screen.height, 0);
+        Material mat = ObterMaterialGL();
+        mat.SetPass(0);
+        GL.Begin(GL.TRIANGLES);
+        GL.Color(cor);
+        GL.Vertex3(p1.x, p1.y, 0);
+        GL.Vertex3(p2.x, p2.y, 0);
+        GL.Vertex3(p3.x, p3.y, 0);
+        GL.End();
+        GL.PopMatrix();
+    }
+
+    void DesenharRetanguloSolido(Rect r, Color cor)
+    {
+        if (Event.current.type != EventType.Repaint) return;
+
+        GL.PushMatrix();
+        // Y crescendo para baixo, igual ao sistema usado em CalcularRects/OnGUI
+        GL.LoadPixelMatrix(0, Screen.width, Screen.height, 0);
+        Material mat = ObterMaterialGL();
+        mat.SetPass(0);
+        GL.Begin(GL.QUADS);
+        GL.Color(cor);
+        GL.Vertex3(r.xMin, r.yMin, 0);
+        GL.Vertex3(r.xMax, r.yMin, 0);
+        GL.Vertex3(r.xMax, r.yMax, 0);
+        GL.Vertex3(r.xMin, r.yMax, 0);
+        GL.End();
+        GL.PopMatrix();
+    }
+
+    private Material _matGL;
+    Material ObterMaterialGL()
+    {
+        if (_matGL == null)
+        {
+            Shader shader = Shader.Find("Hidden/Internal-Colored");
+            _matGL = new Material(shader);
+            _matGL.hideFlags = HideFlags.HideAndDontSave;
+            _matGL.SetInt("_SrcBlend", (int)UnityEngine.Rendering.BlendMode.SrcAlpha);
+            _matGL.SetInt("_DstBlend", (int)UnityEngine.Rendering.BlendMode.OneMinusSrcAlpha);
+            _matGL.SetInt("_Cull", (int)UnityEngine.Rendering.CullMode.Off);
+            _matGL.SetInt("_ZWrite", 0);
+        }
+        return _matGL;
+    }
+
+    void GerarTexturas() { } // não precisa mais de texturas
+
+    void OnDestroy()
+    {
+        if (_matGL != null) Destroy(_matGL);
+    }
+}
