@@ -124,19 +124,17 @@ public class GameManager : MonoBehaviour
         {
             tempoLentoTimer -= Time.deltaTime;
             if (tempoLentoTimer <= 0f)
-            {
-                foreach (var e in FindAll<Enemy>()) e.speed /= tempoLentoMultiplicador;
                 tempoLentoAtivo = false;
-            }
         }
 
         // Timer de onda
         if (timerAtivo && jogoIniciado)
         {
-            timerOnda -= Time.deltaTime;
+            float fatorTimer = tempoLentoAtivo ? tempoLentoMultiplicador : 1f;
+            timerOnda -= Time.deltaTime * fatorTimer;
             AtualizarTimerUI();
 
-            if (timerOnda <= 0f)
+        if (timerOnda <= 0f)
             {
                 timerAtivo = false;
                 timerText.gameObject.SetActive(false);
@@ -366,11 +364,8 @@ public class GameManager : MonoBehaviour
 
     public void AtivarTempoLento(float duracao)
     {
-        if (tempoLentoAtivo)
-            foreach (var e in FindAll<Enemy>()) e.speed /= tempoLentoMultiplicador;
         tempoLentoAtivo = true;
         tempoLentoTimer = duracao;
-        foreach (var e in FindAll<Enemy>()) e.speed *= tempoLentoMultiplicador;
     }
 
     void TentarSpawnPowerUp()
@@ -408,7 +403,16 @@ public class GameManager : MonoBehaviour
         tempoLentoAtivo = false;
         tempoLentoTimer = 0f;
         isBossWave = (ondasCompletas == 5) || (ondasCompletas == 6);
-        float tempoBase = isBossWave ? tempoLimiteOnda * 1.5f : tempoLimiteOnda;
+
+        float tempoBase;
+        if (!isBossWave)
+            tempoBase = tempoLimiteOnda;
+        else if (ondasCompletas == 5)
+            tempoBase = tempoLimiteOnda * 1.8f;
+        else
+            tempoBase = tempoLimiteOnda * 1.2f;
+
+        // ← estas linhas estavam faltando!
         timerOnda = Mathf.Max(10f, tempoBase - (ondasCompletas * 3f));
         timerAtivo = true;
         timerText.gameObject.SetActive(true);
@@ -432,7 +436,15 @@ public class GameManager : MonoBehaviour
             SoundManager.instance.TocarMusicaBoss();
 
         GerarPerguntaBoss();
-        SpawnInimigosComNumeros(0.3f + (faseAtual * 0.08f) + (ondasCompletas * 0.03f));
+
+        // Boss 1 (onda 6) — mais lento
+        // Boss 2 (onda 7) — mais rápido e difícil
+        bool bossFinal = (ondasCompletas == 6);
+        float velocidade = bossFinal  // ← F maiúsculo
+                    ? 0.5f + (faseAtual * 0.1f)   // Boss 1 — mais lento
+            : 0.8f + (faseAtual * 0.15f); // Boss 2 — mais rápido
+
+        SpawnInimigosComNumeros(velocidade);
     }
 
     void SpawnInimigosComNumeros(float velocidade)
@@ -544,16 +556,18 @@ public class GameManager : MonoBehaviour
                 a = correctAnswer + b + c;
                 perguntaAtual = $"{a} - {b} - {c} = ";
                 break;
-            case 3:
-                b = Random.Range(2, 5);
-                int quoc = Random.Range(1, 4);
-                a = b * quoc; c = Random.Range(1, 9 - quoc + 1);
+            case 3: // Divisão — (a ÷ b) + c com b sendo 8 ou 9
+                b = Random.Range(0, 2) == 0 ? 8 : 9;
+                int quoc = Random.Range(1, 5);
+                a = b * quoc;
+                c = Random.Range(1, 6);
                 correctAnswer = quoc + c;
                 perguntaAtual = $"({a} ÷ {b}) + {c} = ";
                 break;
-            case 4:
-                a = Random.Range(1, 3); b = Random.Range(1, 3);
-                c = Random.Range(1, 9 - (a * b) + 1);
+            case 4: // Multiplicação — (a × b) + c com a sendo 8 ou 9
+                a = Random.Range(0, 2) == 0 ? 8 : 9;
+                b = Random.Range(1, 5);
+                c = Random.Range(1, 6);
                 correctAnswer = (a * b) + c;
                 perguntaAtual = $"({a} × {b}) + {c} = ";
                 break;
@@ -660,7 +674,6 @@ public class GameManager : MonoBehaviour
             if (player != null && player.TemEscudo())
             {
                 player.UsarEscudo();
-                player.AtivarEscudo(0f);
                 FeedbackManager.instance.MostrarMensagem("ESCUDO BLOQUEOU!", new Color(0.3f, 0.8f, 1f));
                 if (EfeitosManager.instance != null)
                     EfeitosManager.instance.ShakeCamera();

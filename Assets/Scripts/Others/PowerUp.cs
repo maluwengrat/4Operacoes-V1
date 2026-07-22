@@ -8,6 +8,10 @@ public class PowerUp : MonoBehaviour
     private float speed = 2f;
     private SpriteRenderer sr;
 
+    // Timer de expiração do power-up na tela
+    private float tempoNaTela = 0f;
+    private const float tempoMaxNaTela = 10f; // some após 10s se não coletado
+
     void Awake()
     {
         sr = GetComponent<SpriteRenderer>();
@@ -41,8 +45,27 @@ public class PowerUp : MonoBehaviour
 
     void Update()
     {
+        // Desce na tela
         transform.Translate(Vector2.down * speed * Time.deltaTime);
-        if (transform.position.y < -6f) Destroy(gameObject);
+
+        // Some se sair da tela
+        if (transform.position.y < -6f)
+        {
+            Destroy(gameObject);
+            return;
+        }
+
+        // Some após tempoMaxNaTela segundos piscando
+        tempoNaTela += Time.deltaTime;
+        if (tempoNaTela > tempoMaxNaTela * 0.7f)
+        {
+            // Pisca nos últimos 30% do tempo
+            sr.enabled = Mathf.Sin(Time.time * 10f) > 0f;
+        }
+        if (tempoNaTela >= tempoMaxNaTela)
+        {
+            Destroy(gameObject);
+        }
     }
 
     void OnTriggerEnter2D(Collider2D other)
@@ -61,8 +84,10 @@ public class PowerUp : MonoBehaviour
                 FeedbackManager.instance.MostrarMensagem("TEMPO LENTO!", new Color(0.8f, 0.4f, 1f));
                 break;
         }
+
         if (SoundManager.instance != null)
-            SoundManager.instance.TocarPowerUp();  // ← adicione antes do Destroy
+            SoundManager.instance.TocarPowerUp();
+
         Destroy(gameObject);
     }
 }
