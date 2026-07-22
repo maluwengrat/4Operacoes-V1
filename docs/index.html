@@ -6,6 +6,30 @@
     <title>Unity Web Player | Math Shooter</title>
     <link rel="shortcut icon" href="TemplateData/favicon.ico">
     <link rel="stylesheet" href="TemplateData/style.css">
+    <style>
+      html, body {
+        margin: 0;
+        padding: 0;
+        overflow: hidden;
+      }
+      #unity-container.unity-desktop {
+        width: 100vw;
+        height: 100vh;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        position: relative;
+      }
+      #unity-container.unity-desktop #unity-canvas {
+        width: 100%;
+        height: 100%;
+        max-width: 100vw;
+        max-height: 100vh;
+        aspect-ratio: 1920 / 1080;
+        width: auto;
+        height: auto;
+      }
+    </style>
   </head>
   <body>
     <div id="unity-container" class="unity-desktop">
@@ -103,9 +127,9 @@
 
 
       } else {
-        // Desktop style: Render the game canvas in a window that can be maximized to fullscreen:
-        canvas.style.width = "1920px";
-        canvas.style.height = "1080px";
+        // Desktop style: Render the game canvas scaled to fit the browser window,
+        // preserving the original 1920x1080 aspect ratio (see CSS above).
+        document.querySelector("#unity-container").className = "unity-desktop";
       }
 
       document.querySelector("#unity-loading-bar").style.display = "block";
