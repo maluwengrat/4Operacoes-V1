@@ -3,6 +3,7 @@
   <head>
     <meta charset="utf-8">
     <meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+    <meta name="viewport" content="width=device-width, height=device-height, initial-scale=1.0, user-scalable=no, shrink-to-fit=yes">
     <title>Unity Web Player | Math Shooter</title>
     <style>
       * { margin: 0; padding: 0; box-sizing: border-box; }
@@ -20,19 +21,18 @@
         align-items: center;
         justify-content: center;
         background: #000;
+        overflow: hidden;
       }
       #unity-canvas {
         display: block;
         background: #000;
       }
-      /* Esconde os ícones do Unity */
       #unity-footer,
       #unity-fullscreen-button,
       #unity-logo-title-footer,
       #unity-build-title {
         display: none !important;
       }
-      /* Botão fullscreen customizado */
       #custom-fullscreen-btn {
         position: fixed;
         top: 12px;
@@ -59,7 +59,6 @@
         stroke: #fff;
         stroke-width: 2;
       }
-      /* Loading bar */
       #unity-loading-bar {
         position: fixed;
         top: 50%;
@@ -114,12 +113,14 @@
         var proporcao = 1920 / 1080;
 
         var largura, altura;
+
+        // Cover — ocupa tela toda sem barras pretas
         if (larguraJanela / alturaJanela > proporcao) {
-          altura = alturaJanela;
-          largura = altura * proporcao;
-        } else {
           largura = larguraJanela;
           altura = largura / proporcao;
+        } else {
+          altura = alturaJanela;
+          largura = altura * proporcao;
         }
 
         canvas.style.width = Math.floor(largura) + "px";
@@ -171,9 +172,14 @@
           document.querySelector("#unity-progress-bar-full").style.width = 100 * progress + "%";
         }).then((unityInstance) => {
           document.querySelector("#unity-loading-bar").style.display = "none";
-          document.querySelector("#unity-fullscreen-button").onclick = () => {
-            unityInstance.SetFullscreen(1);
-          };
+
+          // Detecta mobile e avisa o Unity
+          var isMobile = /iPhone|iPad|iPod|Android|webOS|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent)
+                      || (navigator.maxTouchPoints && navigator.maxTouchPoints > 1);
+          if (isMobile) {
+            unityInstance.SendMessage("MobileUI", "SetMobileFromJS", "1");
+          }
+
         }).catch((message) => {
           alert(message);
         });
