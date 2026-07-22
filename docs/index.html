@@ -21,7 +21,6 @@
         align-items: center;
         justify-content: center;
         background: #000;
-        overflow: hidden;
       }
       #unity-canvas {
         display: block;
@@ -49,35 +48,24 @@
         justify-content: center;
         cursor: pointer;
       }
-      #custom-fullscreen-btn:hover {
-        background: rgba(0, 0, 0, 0.8);
-      }
+      #custom-fullscreen-btn:hover { background: rgba(0, 0, 0, 0.8); }
       #custom-fullscreen-btn svg {
-        width: 20px;
-        height: 20px;
-        fill: none;
-        stroke: #fff;
-        stroke-width: 2;
+        width: 20px; height: 20px;
+        fill: none; stroke: #fff; stroke-width: 2;
       }
       #unity-loading-bar {
         position: fixed;
-        top: 50%;
-        left: 50%;
+        top: 50%; left: 50%;
         transform: translate(-50%, -50%);
         text-align: center;
       }
       #unity-progress-bar-empty {
-        width: 300px;
-        height: 10px;
-        background: #333;
-        border-radius: 5px;
-        margin-top: 10px;
+        width: 300px; height: 10px;
+        background: #333; border-radius: 5px; margin-top: 10px;
       }
       #unity-progress-bar-full {
-        width: 0%;
-        height: 100%;
-        background: #ff6a00;
-        border-radius: 5px;
+        width: 0%; height: 100%;
+        background: #ff6a00; border-radius: 5px;
         transition: width 0.2s;
       }
     </style>
@@ -114,13 +102,13 @@
 
         var largura, altura;
 
-        // Cover — ocupa tela toda sem barras pretas
+        // Contain — mantém tudo visível sem cortar
         if (larguraJanela / alturaJanela > proporcao) {
-          largura = larguraJanela;
-          altura = largura / proporcao;
-        } else {
           altura = alturaJanela;
           largura = altura * proporcao;
+        } else {
+          largura = larguraJanela;
+          altura = largura / proporcao;
         }
 
         canvas.style.width = Math.floor(largura) + "px";
@@ -173,7 +161,6 @@
         }).then((unityInstance) => {
           document.querySelector("#unity-loading-bar").style.display = "none";
 
-          // Detecta mobile e avisa o Unity
           var isMobile = /iPhone|iPad|iPod|Android|webOS|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent)
                       || (navigator.maxTouchPoints && navigator.maxTouchPoints > 1);
           if (isMobile) {
