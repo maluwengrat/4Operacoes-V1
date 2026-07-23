@@ -82,6 +82,8 @@ public class PowerUp : MonoBehaviour
             case Tipo.TempoLento:
                 GameManager.instance.AtivarTempoLento(duracao);
                 FeedbackManager.instance.MostrarMensagem("TEMPO LENTO!", new Color(0.8f, 0.4f, 1f));
+                if (TempoLentoEffect.instance != null)
+                    TempoLentoEffect.instance.Ativar(duracao);
                 break;
         }
 

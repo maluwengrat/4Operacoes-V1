@@ -507,22 +507,22 @@ public class GameManager : MonoBehaviour
                 case 1:
                     a = Random.Range(1, 5); b = Random.Range(1, 9 - a + 1);
                     correctAnswer = a + b;
-                    perguntaAtual = $"{a} + {b} = ";
+                    perguntaAtual = $"{a} + {b}";
                     break;
                 case 2:
                     correctAnswer = Random.Range(1, 9); b = Random.Range(1, 9);
                     a = correctAnswer + b;
-                    perguntaAtual = $"{a} - {b} = ";
+                    perguntaAtual = $"{a} - {b}";
                     break;
                 case 3:
                     correctAnswer = Random.Range(1, 9); b = Random.Range(2, 9);
                     a = b * correctAnswer;
-                    perguntaAtual = $"{a} ÷ {b} = ";
+                    perguntaAtual = $"{a} ÷ {b}";
                     break;
                 case 4:
                     a = Random.Range(1, 4); b = Random.Range(1, 9 / a + 1);
                     correctAnswer = a * b;
-                    perguntaAtual = $"{a} × {b} = ";
+                    perguntaAtual = $"{a} × {b}";
                     break;
             }
             tentativas++;
@@ -548,13 +548,13 @@ public class GameManager : MonoBehaviour
                 a = Random.Range(1, 4); b = Random.Range(1, 4);
                 c = Random.Range(1, 9 - a - b + 1);
                 correctAnswer = a + b + c;
-                perguntaAtual = $"{a} + {b} + {c} = ";
+                perguntaAtual = $"{a} + {b} + {c}";
                 break;
             case 2:
                 correctAnswer = Random.Range(1, 5);
                 b = Random.Range(1, 4); c = Random.Range(1, 4);
                 a = correctAnswer + b + c;
-                perguntaAtual = $"{a} - {b} - {c} = ";
+                perguntaAtual = $"{a} - {b} - {c}";
                 break;
             case 3: // Divisão — (a ÷ b) + c com b sendo 8 ou 9
                 b = Random.Range(0, 2) == 0 ? 8 : 9;
@@ -562,14 +562,14 @@ public class GameManager : MonoBehaviour
                 a = b * quoc;
                 c = Random.Range(1, 6);
                 correctAnswer = quoc + c;
-                perguntaAtual = $"({a} ÷ {b}) + {c} = ";
+                perguntaAtual = $"({a} ÷ {b}) + {c}";
                 break;
             case 4: // Multiplicação — (a × b) + c com a sendo 8 ou 9
                 a = Random.Range(0, 2) == 0 ? 8 : 9;
                 b = Random.Range(1, 5);
                 c = Random.Range(1, 6);
                 correctAnswer = (a * b) + c;
-                perguntaAtual = $"({a} × {b}) + {c} = ";
+                perguntaAtual = $"({a} × {b}) + {c}";
                 break;
             default:
                 GerarPergunta(out a, out b);
