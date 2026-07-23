@@ -57,7 +57,62 @@
 						fill: none; stroke: #fff; stroke-width: 2;
 						}
 
+						/* ===== Destaque animado do botão de tela cheia ===== */
+						#custom-fullscreen-btn.destacar::before {
+						content: "";
+						position: absolute;
+						inset: -6px;
+						border-radius: 12px;
+						border: 2px solid #ff6a00;
+						animation: pulsar-anel 1.6s ease-out infinite;
+						pointer-events: none;
+						}
+						@keyframes pulsar-anel {
+						0% { transform: scale(0.9); opacity: 0.9; }
+						70% { transform: scale(1.6); opacity: 0; }
+						100% { transform: scale(1.6); opacity: 0; }
+						}
 
+						#fullscreen-hint {
+						position: fixed;
+						top: 58px;
+						right: 12px;
+						z-index: 9998;
+						display: flex;
+						align-items: flex-start;
+						gap: 6px;
+						opacity: 0;
+						transform: translateY(-6px);
+						pointer-events: none;
+						transition: opacity 0.4s ease, transform 0.4s ease;
+						}
+						#fullscreen-hint.visivel {
+						opacity: 1;
+						transform: translateY(0);
+						pointer-events: auto;
+						}
+						#fullscreen-hint-arrow {
+						width: 22px;
+						height: 22px;
+						flex-shrink: 0;
+						color: #ff6a00;
+						animation: apontar 1.2s ease-in-out infinite;
+						}
+						@keyframes apontar {
+						0%, 100% { transform: translateY(0) rotate(-25deg); }
+						50% { transform: translateY(-4px) rotate(-25deg); }
+						}
+						#fullscreen-hint-text {
+						background: rgba(0, 0, 0, 0.75);
+						color: #fff;
+						font-size: 12px;
+						font-weight: 600;
+						line-height: 1.35;
+						padding: 8px 10px;
+						border-radius: 8px;
+						max-width: 150px;
+						cursor: pointer;
+						}
 
 						/* ===== Rotate device overlay ===== */
 						#rotate-overlay {
@@ -118,6 +173,14 @@
 				<path d="M4 9V4h5M20 9V4h-5M4 15v5h5M20 15v5h-5"/>
 			</svg>
 		</button>
+
+		<div id="fullscreen-hint">
+			<svg id="fullscreen-hint-arrow" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+				<line x1="19" y1="5" x2="7" y2="17"></line>
+				<polyline points="7 8 7 17 16 17"></polyline>
+			</svg>
+			<div id="fullscreen-hint-text">Toque aqui para jogar em tela cheia</div>
+		</div>
 
 		<script>
 			var canvas = document.querySelector("#unity-canvas");
@@ -220,6 +283,55 @@
 			else if (document.webkitExitFullscreen) document.webkitExitFullscreen();
 			}
 			});
+
+			// ===== Dica animada apontando para o botão de tela cheia =====
+			var botaoTelaCheia = document.querySelector("#custom-fullscreen-btn");
+			var dicaTelaCheia = document.querySelector("#fullscreen-hint");
+			var textoDicaTelaCheia = document.querySelector("#fullscreen-hint-text");
+			var jaViuDica = sessionStorage.getItem("mathshooter-dica-tela-cheia");
+			var timeoutEsconderDica;
+
+			function esconderDica() {
+			dicaTelaCheia.classList.remove("visivel");
+			botaoTelaCheia.classList.remove("destacar");
+			clearTimeout(timeoutEsconderDica);
+			}
+
+			function mostrarDica() {
+			if (jaViuDica || document.fullscreenElement) return;
+			dicaTelaCheia.classList.add("visivel");
+			botaoTelaCheia.classList.add("destacar");
+			sessionStorage.setItem("mathshooter-dica-tela-cheia", "1");
+			timeoutEsconderDica = setTimeout(esconderDica, 6000);
+			}
+
+			textoDicaTelaCheia.addEventListener("click", function () {
+			botaoTelaCheia.click();
+			});
+			dicaTelaCheia.addEventListener("click", esconderDica);
+			botaoTelaCheia.addEventListener("click", esconderDica);
+			document.addEventListener("fullscreenchange", function () {
+			if (document.fullscreenElement) esconderDica();
+			});
+
+			if (!isMobile) {
+			setTimeout(mostrarDica, 1500);
+			} else {
+			// Em celulares, exibe a dica só depois que a tela já estiver na horizontal
+			var jaMostrouNoMobile = false;
+			window.addEventListener("resize", function () {
+			if (!jaMostrouNoMobile && window.innerWidth > window.innerHeight) {
+			jaMostrouNoMobile = true;
+			setTimeout(mostrarDica, 1000);
+			}
+			});
+			window.addEventListener("orientationchange", function () {
+			if (!jaMostrouNoMobile && window.innerWidth > window.innerHeight) {
+			jaMostrouNoMobile = true;
+			setTimeout(mostrarDica, 1000);
+			}
+			});
+			}
 		</script>
 	</body>
 </html>
