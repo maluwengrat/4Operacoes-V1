@@ -167,111 +167,111 @@
     </button>
 
     <script>
-      var canvas = document.querySelector("#unity-canvas");
+		var canvas = document.querySelector("#unity-canvas");
 
-      function redimensionar() {
-        var larguraJanela = window.innerWidth;
-        var alturaJanela = window.innerHeight;
-        var proporcao = 1920 / 1080;
+		function redimensionar() {
+		var larguraJanela = window.innerWidth;
+		var alturaJanela = window.innerHeight;
+		var proporcao = 1920 / 1080;
 
-        var largura, altura;
+		var largura, altura;
 
-        if (larguraJanela / alturaJanela > proporcao) {
-          altura = alturaJanela;
-          largura = Math.floor(altura * proporcao);
-        } else {
-          largura = larguraJanela;
-          altura = Math.floor(largura / proporcao);
-        }
+		if (larguraJanela / alturaJanela > proporcao) {
+		altura = alturaJanela;
+		largura = Math.floor(altura * proporcao);
+		} else {
+		largura = larguraJanela;
+		altura = Math.floor(largura / proporcao);
+		}
 
-        largura = Math.min(largura, larguraJanela);
-        altura = Math.min(altura, alturaJanela);
+		largura = Math.min(largura, larguraJanela);
+		altura = Math.min(altura, alturaJanela);
 
-        canvas.style.width = largura + "px";
-        canvas.style.height = altura + "px";
-      }
+		canvas.style.width = largura + "px";
+		canvas.style.height = altura + "px";
+		}
 
-      window.addEventListener("resize", redimensionar);
-      redimensionar();
+		window.addEventListener("resize", redimensionar);
+		redimensionar();
 
-      function unityShowBanner(msg, type) {
-        var warningBanner = document.querySelector("#unity-warning");
-        function updateBannerVisibility() {
-          warningBanner.style.display = warningBanner.children.length ? 'block' : 'none';
-        }
-        var div = document.createElement('div');
-        div.innerHTML = msg;
-        warningBanner.appendChild(div);
-        if (type == 'error') div.style = 'background: red; padding: 10px;';
-        else {
-          if (type == 'warning') div.style = 'background: yellow; padding: 10px;';
-          setTimeout(function() {
-            warningBanner.removeChild(div);
-            updateBannerVisibility();
-          }, 5000);
-        }
-        updateBannerVisibility();
-      }
+		function unityShowBanner(msg, type) {
+		var warningBanner = document.querySelector("#unity-warning");
+		function updateBannerVisibility() {
+		warningBanner.style.display = warningBanner.children.length ? 'block' : 'none';
+		}
+		var div = document.createElement('div');
+		div.innerHTML = msg;
+		warningBanner.appendChild(div);
+		if (type == 'error') div.style = 'background: red; padding: 10px;';
+		else {
+		if (type == 'warning') div.style = 'background: yellow; padding: 10px;';
+		setTimeout(function() {
+		warningBanner.removeChild(div);
+		updateBannerVisibility();
+		}, 5000);
+		}
+		updateBannerVisibility();
+		}
 
-      // ===== Detecção de mobile e overlay de girar tela =====
-      var isMobile = /iPhone|iPad|iPod|Android|webOS|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
-      var rotateOverlay = document.querySelector("#rotate-overlay");
+		// ===== Detecção de mobile e overlay de girar tela =====
+		var isMobile = /iPhone|iPad|iPod|Android|webOS|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+		var rotateOverlay = document.querySelector("#rotate-overlay");
 
-      function checarOrientacao() {
-        if (!isMobile) return;
-        var retrato = window.innerHeight > window.innerWidth;
-        rotateOverlay.classList.toggle("ativo", retrato);
-      }
+		function checarOrientacao() {
+		if (!isMobile) return;
+		var retrato = window.innerHeight > window.innerWidth;
+		rotateOverlay.classList.toggle("ativo", retrato);
+		}
 
-      window.addEventListener("resize", checarOrientacao);
-      window.addEventListener("orientationchange", checarOrientacao);
-      checarOrientacao();
+		window.addEventListener("resize", checarOrientacao);
+		window.addEventListener("orientationchange", checarOrientacao);
+		checarOrientacao();
 
-      var buildUrl = "Build";
-      var loaderUrl = buildUrl + "/Nova pasta.loader.js";
-      var config = {
-        arguments: [],
-        dataUrl: buildUrl + "/Nova pasta.data",
-        frameworkUrl: buildUrl + "/Nova pasta.framework.js",
-        codeUrl: buildUrl + "/Nova pasta.wasm",
-        streamingAssetsUrl: "StreamingAssets",
-        companyName: "UTFPR",
-        productName: "Math Shooter",
-        productVersion: "1.0",
-        showBanner: unityShowBanner,
-      };
+		var buildUrl = "Build";
+		var loaderUrl = buildUrl + "/docs.loader.js";
+		var config = {
+		arguments: [],
+		dataUrl: buildUrl + "/docs.data",
+		frameworkUrl: buildUrl + "/docs.framework.js",
+		codeUrl: buildUrl + "/docs.wasm",
+		streamingAssetsUrl: "StreamingAssets",
+		companyName: "UTFPR",
+		productName: "Math Shooter",
+		productVersion: "1.0",
+		showBanner: unityShowBanner,
+		};
 
-      var script = document.createElement("script");
-      script.src = loaderUrl;
-      script.onload = () => {
-        createUnityInstance(canvas, config, (progress) => {
-          var pct = Math.round(100 * progress);
-          document.querySelector("#unity-progress-bar-full").style.width = pct + "%";
-          document.querySelector("#loading-percent").textContent = pct + "%";
-        }).then((unityInstance) => {
-          document.querySelector("#unity-loading-bar").style.display = "none";
+		var script = document.createElement("script");
+		script.src = loaderUrl;
+		script.onload = () => {
+		createUnityInstance(canvas, config, (progress) => {
+		var pct = Math.round(100 * progress);
+		document.querySelector("#unity-progress-bar-full").style.width = pct + "%";
+		document.querySelector("#loading-percent").textContent = pct + "%";
+		}).then((unityInstance) => {
+		document.querySelector("#unity-loading-bar").style.display = "none";
 
-          if (isMobile) {
-            unityInstance.SendMessage("MobileUI", "SetMobileFromJS", "1");
-          }
+		if (isMobile) {
+		unityInstance.SendMessage("MobileUI", "SetMobileFromJS", "1");
+		}
 
-        }).catch((message) => {
-          alert(message);
-        });
-      };
+		}).catch((message) => {
+		alert(message);
+		});
+		};
 
-      document.body.appendChild(script);
+		document.body.appendChild(script);
 
-      document.querySelector("#custom-fullscreen-btn").addEventListener("click", function () {
-        var el = document.querySelector("#unity-container");
-        if (!document.fullscreenElement) {
-          if (el.requestFullscreen) el.requestFullscreen();
-          else if (el.webkitRequestFullscreen) el.webkitRequestFullscreen();
-        } else {
-          if (document.exitFullscreen) document.exitFullscreen();
-          else if (document.webkitExitFullscreen) document.webkitExitFullscreen();
-        }
-      });
-    </script>
+		document.querySelector("#custom-fullscreen-btn").addEventListener("click", function () {
+		var el = document.querySelector("#unity-container");
+		if (!document.fullscreenElement) {
+		if (el.requestFullscreen) el.requestFullscreen();
+		else if (el.webkitRequestFullscreen) el.webkitRequestFullscreen();
+		} else {
+		if (document.exitFullscreen) document.exitFullscreen();
+		else if (document.webkitExitFullscreen) document.webkitExitFullscreen();
+		}
+		});
+	</script>
   </body>
 </html>
