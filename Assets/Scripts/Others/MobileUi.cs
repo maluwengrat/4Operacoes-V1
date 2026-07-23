@@ -4,9 +4,6 @@ public class MobileUI : MonoBehaviour
 {
     public static MobileUI instance;
 
-    [Header("Forçar controles mobile mesmo em desktop (testes)")]
-    public bool forcarMobile = false;
-
     private bool isMobile;
     private PlayerController player;
 
@@ -27,7 +24,7 @@ public class MobileUI : MonoBehaviour
     void Awake()
     {
         instance = this;
-        isMobile = forcarMobile;
+        isMobile = false;
     }
 
     void Start()
