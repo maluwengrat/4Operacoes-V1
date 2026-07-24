@@ -107,14 +107,15 @@ public class MobileUI : MonoBehaviour
     {
         float W = Screen.width;
         float H = Screen.height;
-        float btnSize = Mathf.Clamp(Mathf.Min(W, H) * 0.18f, 80f, 130f);
-        float margem = btnSize * 0.15f;
-        float margemBorda = Mathf.Clamp(Mathf.Min(W, H) * 0.06f, 24f, 50f);
-        float baseY = H - btnSize - margemBorda;
+        float btnSize = Mathf.Clamp(Mathf.Min(W, H) * 0.24f, 105f, 165f);
+        float margem = btnSize * 0.45f;
+        float margemLateral = Mathf.Clamp(Mathf.Min(W, H) * 0.09f, 36f, 75f);
+        float margemInferior = Mathf.Clamp(Mathf.Min(W, H) * 0.06f, 24f, 50f);
+        float baseY = H - btnSize - margemInferior;
 
-        rEsq = new Rect(margemBorda, baseY, btnSize, btnSize);
-        rDir = new Rect(margemBorda + btnSize + margem * 0.8f, baseY, btnSize, btnSize);
-        rAtira = new Rect(W - btnSize - margemBorda, baseY, btnSize, btnSize);
+        rEsq = new Rect(margemLateral, baseY, btnSize, btnSize);
+        rDir = new Rect(margemLateral + btnSize + margem * 0.8f, baseY, btnSize, btnSize);
+        rAtira = new Rect(W - btnSize - margemLateral, baseY, btnSize, btnSize);
     }
 
     // ── Desenho ───────────────────────────────────────────────────────
