@@ -56,8 +56,6 @@
 						width: 20px; height: 20px;
 						fill: none; stroke: #fff; stroke-width: 2;
 						}
-
-						/* ===== Destaque animado do botão de tela cheia ===== */
 						#custom-fullscreen-btn.destacar::before {
 						content: "";
 						position: absolute;
@@ -72,7 +70,6 @@
 						70% { transform: scale(1.6); opacity: 0; }
 						100% { transform: scale(1.6); opacity: 0; }
 						}
-
 						#fullscreen-hint {
 						position: fixed;
 						top: 58px;
@@ -113,8 +110,6 @@
 						max-width: 150px;
 						cursor: pointer;
 						}
-
-						/* ===== Rotate device overlay ===== */
 						#rotate-overlay {
 						position: fixed;
 						inset: 0;
@@ -151,7 +146,6 @@
 	<body>
 		<div id="unity-container">
 			<canvas id="unity-canvas" tabindex="-1"></canvas>
-
 			<div id="unity-warning"></div>
 			<div id="unity-footer" style="display:none">
 				<div id="unity-logo-title-footer"></div>
@@ -191,7 +185,6 @@
 			var proporcao = 1920 / 1080;
 
 			var largura, altura;
-
 			if (larguraJanela / alturaJanela > proporcao) {
 			altura = alturaJanela;
 			largura = Math.floor(altura * proporcao);
@@ -229,7 +222,6 @@
 			updateBannerVisibility();
 			}
 
-			// ===== Detecção de mobile e overlay de girar tela =====
 			var isMobile = /iPhone|iPad|iPod|Android|webOS|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
 			var rotateOverlay = document.querySelector("#rotate-overlay");
 
@@ -262,9 +254,15 @@
 			script.onload = () => {
 			createUnityInstance(canvas, config, (progress) => {
 			}).then((unityInstance) => {
+
+			// Envia se é mobile
 			if (isMobile) {
 			unityInstance.SendMessage("MobileUI", "SetMobileFromJS", "1");
 			}
+
+			// ← CORREÇÃO: envia o devicePixelRatio real do navegador
+			var dpr = (window.devicePixelRatio || 1).toFixed(4);
+			unityInstance.SendMessage("MobileUI", "SetDevicePixelRatioFromJS", dpr.toString());
 
 			}).catch((message) => {
 			alert(message);
@@ -284,37 +282,28 @@
 			}
 			});
 
-			// ===== Dica animada apontando para o botão de tela cheia =====
 			var botaoTelaCheia = document.querySelector("#custom-fullscreen-btn");
 			var dicaTelaCheia = document.querySelector("#fullscreen-hint");
 			var textoDicaTelaCheia = document.querySelector("#fullscreen-hint-text");
 			var timeoutEsconderDica;
 
-			// sessionStorage pode falhar em páginas abertas via file:// ou em navegação
-			// privada — nesses casos usamos apenas uma variável em memória como fallback.
 			var armazenamentoOk = true;
 			try {
 			sessionStorage.setItem("mathshooter-teste", "1");
 			sessionStorage.removeItem("mathshooter-teste");
-			} catch (e) {
-			armazenamentoOk = false;
-			}
+			} catch (e) { armazenamentoOk = false; }
 
 			function jaViuDica() {
 			if (!armazenamentoOk) return window.__mathshooterJaViuDica === true;
-			try {
-			return sessionStorage.getItem("mathshooter-dica-tela-cheia") === "1";
-			} catch (e) {
-			return window.__mathshooterJaViuDica === true;
-			}
+			try { return sessionStorage.getItem("mathshooter-dica-tela-cheia") === "1"; }
+			catch (e) { return window.__mathshooterJaViuDica === true; }
 			}
 
 			function marcarDicaVista() {
 			window.__mathshooterJaViuDica = true;
 			if (!armazenamentoOk) return;
-			try {
-			sessionStorage.setItem("mathshooter-dica-tela-cheia", "1");
-			} catch (e) {}
+			try { sessionStorage.setItem("mathshooter-dica-tela-cheia", "1"); }
+			catch (e) {}
 			}
 
 			function esconderDica() {
@@ -331,9 +320,7 @@
 			timeoutEsconderDica = setTimeout(esconderDica, 6000);
 			}
 
-			textoDicaTelaCheia.addEventListener("click", function () {
-			botaoTelaCheia.click();
-			});
+			textoDicaTelaCheia.addEventListener("click", function () { botaoTelaCheia.click(); });
 			dicaTelaCheia.addEventListener("click", esconderDica);
 			botaoTelaCheia.addEventListener("click", esconderDica);
 			document.addEventListener("fullscreenchange", function () {
@@ -343,7 +330,6 @@
 			if (!isMobile) {
 			setTimeout(mostrarDica, 1500);
 			} else {
-			// Em celulares, exibe a dica só depois que a tela já estiver na horizontal
 			var jaMostrouNoMobile = false;
 			window.addEventListener("resize", function () {
 			if (!jaMostrouNoMobile && window.innerWidth > window.innerHeight) {

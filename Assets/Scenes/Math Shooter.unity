@@ -1287,6 +1287,12 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::MobileUI
   testarComoMobileNoEditor: 0
+  tamanhoBotaoCm: 2
+  tamanhoMinimoPercentual: 0.1
+  tamanhoMaximoPercentual: 0.32
+  margemLateralPercentual: 0.09
+  margemInferiorPercentual: 0.06
+  espacoEntreEsqDirPercentual: 0.45
 --- !u!4 &676034687
 Transform:
   m_ObjectHideFlags: 0

@@ -5,11 +5,38 @@ public class MobileUI : MonoBehaviour
     public static MobileUI instance;
 
     [Header("Teste no Editor")]
-    [Tooltip("Marque para simular o modo mobile ao dar Play dentro do Editor da Unity (não afeta o build final).")]
+    [Tooltip("Marque para simular o modo mobile ao dar Play dentro do Editor da Unity.")]
     [SerializeField] private bool testarComoMobileNoEditor = false;
 
+    [Header("Tamanho físico dos botões")]
+    [Tooltip("Tamanho desejado do botão em centímetros físicos na tela do celular.")]
+    [Range(1.0f, 3.0f)]
+    [SerializeField] private float tamanhoBotaoCm = 2.4f;
+
+    [Tooltip("Limites de segurança (% da altura da tela) para caso o DPI seja inválido.")]
+    [SerializeField] private float tamanhoMinimoPercentual = 0.10f;
+    [SerializeField] private float tamanhoMaximoPercentual = 0.32f;
+
+    [Header("Posição dos botões")]
+    [Tooltip("Distância dos botões até a lateral da tela, como % da altura da tela.")]
+    [Range(0.02f, 0.15f)]
+    [SerializeField] private float margemLateralPercentual = 0.09f;
+
+    [Tooltip("Distância dos botões até o fundo da tela, como % da altura da tela.")]
+    [Range(0.02f, 0.12f)]
+    [SerializeField] private float margemInferiorPercentual = 0.06f;
+
+    [Tooltip("Espaço entre os botões esquerda e direita, como % do tamanho do botão.")]
+    [Range(0.10f, 0.80f)]
+    [SerializeField] private float espacoEntreEsqDirPercentual = 0.45f;
+
+    // ── Estado interno ────────────────────────────────────────────────
     private bool isMobile;
     private PlayerController player;
+
+    // devicePixelRatio vindo do JavaScript (window.devicePixelRatio)
+    // Valor padrão 1 para desktop; celulares costumam ter 2, 3 ou mais
+    private float devicePixelRatio = 1f;
 
     private bool pressEsq = false;
     private bool pressDir = false;
@@ -18,12 +45,6 @@ public class MobileUI : MonoBehaviour
     private int touchIdEsq = -1;
     private int touchIdDir = -1;
     private int touchIdAtira = -1;
-
-    // Texturas geradas por código
-    private Texture2D texCirculo;
-    private Texture2D texSetaEsq;
-    private Texture2D texSetaDir;
-    private Texture2D texFogo;
 
     void Awake()
     {
@@ -37,19 +58,31 @@ public class MobileUI : MonoBehaviour
 
     void Start()
     {
-        player = FindObjectOfType<PlayerController>();
-        GerarTexturas();
+        player = FindFirstObjectByType<PlayerController>();
     }
 
+    // Chamado pelo JavaScript via SendMessage
     public void SetMobileFromJS(string valor)
     {
         if (valor == "1") isMobile = true;
     }
 
+    // Chamado pelo JavaScript via SendMessage com window.devicePixelRatio
+    public void SetDevicePixelRatioFromJS(string valor)
+    {
+        if (float.TryParse(valor,
+            System.Globalization.NumberStyles.Float,
+            System.Globalization.CultureInfo.InvariantCulture,
+            out float dpr) && dpr > 0f)
+        {
+            devicePixelRatio = dpr;
+        }
+    }
+
     void Update()
     {
         if (!isMobile) return;
-        if (player == null) player = FindObjectOfType<PlayerController>();
+        if (player == null) player = FindFirstObjectByType<PlayerController>();
         if (GameManager.instance != null && !GameManager.instance.JogoRodando()) return;
         ProcessarTouch();
     }
@@ -107,17 +140,23 @@ public class MobileUI : MonoBehaviour
     {
         float W = Screen.width;
         float H = Screen.height;
-        float btnSize = Mathf.Clamp(Mathf.Min(W, H) * 0.24f, 105f, 165f);
-        float margem = btnSize * 0.45f;
-        float margemLateral = Mathf.Clamp(Mathf.Min(W, H) * 0.09f, 36f, 75f);
-        float margemInferior = Mathf.Clamp(Mathf.Min(W, H) * 0.06f, 24f, 50f);
+
+        // Usa a menor dimensão para ser consistente em portrait e landscape
+        float base_ = Mathf.Min(W, H);
+
+        // Tamanho do botão = 20% da menor dimensão da tela
+        // Ajuste este valor conforme preferir (0.18 = menor, 0.25 = maior)
+        float btnSize = base_ * 0.12f;
+
+        float margem = btnSize * 0.3f;
+        float margemLateral = W * 0.04f;
+        float margemInferior = H * 0.05f;
         float baseY = H - btnSize - margemInferior;
 
         rEsq = new Rect(margemLateral, baseY, btnSize, btnSize);
-        rDir = new Rect(margemLateral + btnSize + margem * 0.8f, baseY, btnSize, btnSize);
+        rDir = new Rect(margemLateral + btnSize + margem, baseY, btnSize, btnSize);
         rAtira = new Rect(W - btnSize - margemLateral, baseY, btnSize, btnSize);
     }
-
     // ── Desenho ───────────────────────────────────────────────────────
 
     void OnGUI()
@@ -136,7 +175,6 @@ public class MobileUI : MonoBehaviour
 
     void DesenharBotaoSeta(Rect r, bool pressionado, bool esquerda)
     {
-        // Fundo circular
         Color corFundo = pressionado
             ? new Color(1f, 0.6f, 0.1f, 0.55f)
             : new Color(0.15f, 0.15f, 0.15f, 0.28f);
@@ -146,7 +184,6 @@ public class MobileUI : MonoBehaviour
 
         DesenharCirculo(r, corFundo, corBorda, espessuraBorda: 3f);
 
-        // Seta desenhada com triângulo GL-style via GUI matrix
         float cx = r.x + r.width * 0.5f;
         float cy = r.y + r.height * 0.5f;
         float size = r.width * 0.32f;
@@ -155,14 +192,11 @@ public class MobileUI : MonoBehaviour
             ? new Color(1f, 1f, 1f, 0.9f)
             : new Color(1f, 0.75f, 0.2f, 0.7f);
 
-        // Triângulo da seta
         Vector2 ponta = new Vector2(cx + (esquerda ? -size : size), cy);
         Vector2 topoT = new Vector2(cx + (esquerda ? size * 0.5f : -size * 0.5f), cy - size * 0.85f);
         Vector2 baseT = new Vector2(cx + (esquerda ? size * 0.5f : -size * 0.5f), cy + size * 0.85f);
-
         DesenharTriangulo(ponta, topoT, baseT, corSeta);
 
-        // Barra vertical da seta (estilo ◀ com traço)
         float barraX = esquerda
             ? cx + size * 0.55f - size * 0.12f
             : cx - size * 0.55f + size * 0.12f;
@@ -172,7 +206,6 @@ public class MobileUI : MonoBehaviour
 
     void DesenharBotaoAtira(Rect r, bool pressionado)
     {
-        // Fundo circular vermelho/laranja
         Color corFundo = pressionado
             ? new Color(1f, 0.2f, 0.1f, 0.55f)
             : new Color(0.15f, 0.05f, 0.05f, 0.28f);
@@ -190,17 +223,14 @@ public class MobileUI : MonoBehaviour
             ? new Color(1f, 1f, 1f, 0.9f)
             : new Color(1f, 0.5f, 0.2f, 0.7f);
 
-        // Míssil: corpo
         Rect corpo = new Rect(cx - size * 0.18f, cy - size * 0.9f, size * 0.36f, size * 1.4f);
         DesenharRetanguloSolido(corpo, corIcone);
 
-        // Ponta do míssil (triângulo)
         Vector2 ptPonta = new Vector2(cx, cy - size * 0.9f - size * 0.6f);
         Vector2 ptEsq = new Vector2(cx - size * 0.18f, cy - size * 0.9f);
         Vector2 ptDir = new Vector2(cx + size * 0.18f, cy - size * 0.9f);
         DesenharTriangulo(ptPonta, ptEsq, ptDir, corIcone);
 
-        // Asas laterais
         Vector2 asaEsqTopo = new Vector2(cx - size * 0.18f, cy + size * 0.1f);
         Vector2 asaEsqBase = new Vector2(cx - size * 0.18f, cy + size * 0.5f);
         Vector2 asaEsqPont = new Vector2(cx - size * 0.6f, cy + size * 0.5f);
@@ -211,7 +241,6 @@ public class MobileUI : MonoBehaviour
         Vector2 asaDirPont = new Vector2(cx + size * 0.6f, cy + size * 0.5f);
         DesenharTriangulo(asaDirTopo, asaDirBase, asaDirPont, corIcone);
 
-        // Chama do escapamento
         Color corChama = pressionado
             ? new Color(1f, 0.9f, 0.1f, 0.9f)
             : new Color(1f, 0.55f, 0.05f, 0.7f);
@@ -222,7 +251,7 @@ public class MobileUI : MonoBehaviour
         DesenharTriangulo(chamaBase1, chamaBase2, chamaPonta, corChama);
     }
 
-    // ── Primitivas ────────────────────────────────────────────────────
+    // ── Primitivas GL ────────────────────────────────────────────────
 
     void DesenharCirculo(Rect r, Color corFundo, Color corBorda, float espessuraBorda)
     {
@@ -230,25 +259,18 @@ public class MobileUI : MonoBehaviour
         float cx = r.x + r.width * 0.5f;
         float cy = r.y + r.height * 0.5f;
         float rad = r.width * 0.5f;
-
-        // Borda
         DesenharDiscGL(cx, cy, rad, corBorda, res);
-        // Interior
         DesenharDiscGL(cx, cy, rad - espessuraBorda, corFundo, res);
     }
 
     void DesenharDiscGL(float cx, float cy, float raio, Color cor, int segmentos)
     {
         if (Event.current.type != EventType.Repaint) return;
-
         GL.PushMatrix();
-        // Y crescendo para baixo, igual ao sistema usado em CalcularRects/OnGUI
         GL.LoadPixelMatrix(0, Screen.width, Screen.height, 0);
-        Material mat = ObterMaterialGL();
-        mat.SetPass(0);
+        ObterMaterialGL().SetPass(0);
         GL.Begin(GL.TRIANGLES);
         GL.Color(cor);
-
         for (int i = 0; i < segmentos; i++)
         {
             float a1 = Mathf.PI * 2f * i / segmentos;
@@ -257,7 +279,6 @@ public class MobileUI : MonoBehaviour
             GL.Vertex3(cx + Mathf.Cos(a1) * raio, cy + Mathf.Sin(a1) * raio, 0);
             GL.Vertex3(cx + Mathf.Cos(a2) * raio, cy + Mathf.Sin(a2) * raio, 0);
         }
-
         GL.End();
         GL.PopMatrix();
     }
@@ -265,12 +286,9 @@ public class MobileUI : MonoBehaviour
     void DesenharTriangulo(Vector2 p1, Vector2 p2, Vector2 p3, Color cor)
     {
         if (Event.current.type != EventType.Repaint) return;
-
         GL.PushMatrix();
-        // Y crescendo para baixo, igual ao sistema usado em CalcularRects/OnGUI
         GL.LoadPixelMatrix(0, Screen.width, Screen.height, 0);
-        Material mat = ObterMaterialGL();
-        mat.SetPass(0);
+        ObterMaterialGL().SetPass(0);
         GL.Begin(GL.TRIANGLES);
         GL.Color(cor);
         GL.Vertex3(p1.x, p1.y, 0);
@@ -283,12 +301,9 @@ public class MobileUI : MonoBehaviour
     void DesenharRetanguloSolido(Rect r, Color cor)
     {
         if (Event.current.type != EventType.Repaint) return;
-
         GL.PushMatrix();
-        // Y crescendo para baixo, igual ao sistema usado em CalcularRects/OnGUI
         GL.LoadPixelMatrix(0, Screen.width, Screen.height, 0);
-        Material mat = ObterMaterialGL();
-        mat.SetPass(0);
+        ObterMaterialGL().SetPass(0);
         GL.Begin(GL.QUADS);
         GL.Color(cor);
         GL.Vertex3(r.xMin, r.yMin, 0);
@@ -314,8 +329,6 @@ public class MobileUI : MonoBehaviour
         }
         return _matGL;
     }
-
-    void GerarTexturas() { } // não precisa mais de texturas
 
     void OnDestroy()
     {
