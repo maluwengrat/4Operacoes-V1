@@ -4,6 +4,10 @@ public class MobileUI : MonoBehaviour
 {
     public static MobileUI instance;
 
+    [Header("Teste no Editor")]
+    [Tooltip("Marque para simular o modo mobile ao dar Play dentro do Editor da Unity (não afeta o build final).")]
+    [SerializeField] private bool testarComoMobileNoEditor = false;
+
     private bool isMobile;
     private PlayerController player;
 
@@ -25,6 +29,10 @@ public class MobileUI : MonoBehaviour
     {
         instance = this;
         isMobile = false;
+
+#if UNITY_EDITOR
+        if (testarComoMobileNoEditor) isMobile = true;
+#endif
     }
 
     void Start()
@@ -99,13 +107,14 @@ public class MobileUI : MonoBehaviour
     {
         float W = Screen.width;
         float H = Screen.height;
-        float btnSize = Mathf.Clamp(Mathf.Min(W, H) * 0.28f, 120f, 200f);
+        float btnSize = Mathf.Clamp(Mathf.Min(W, H) * 0.18f, 80f, 130f);
         float margem = btnSize * 0.15f;
-        float baseY = H - btnSize - margem;
+        float margemBorda = Mathf.Clamp(Mathf.Min(W, H) * 0.06f, 24f, 50f);
+        float baseY = H - btnSize - margemBorda;
 
-        rEsq = new Rect(margem, baseY, btnSize, btnSize);
-        rDir = new Rect(margem + btnSize + margem * 0.8f, baseY, btnSize, btnSize);
-        rAtira = new Rect(W - btnSize - margem, baseY, btnSize, btnSize);
+        rEsq = new Rect(margemBorda, baseY, btnSize, btnSize);
+        rDir = new Rect(margemBorda + btnSize + margem * 0.8f, baseY, btnSize, btnSize);
+        rAtira = new Rect(W - btnSize - margemBorda, baseY, btnSize, btnSize);
     }
 
     // ── Desenho ───────────────────────────────────────────────────────
@@ -128,20 +137,22 @@ public class MobileUI : MonoBehaviour
     {
         // Fundo circular
         Color corFundo = pressionado
-            ? new Color(1f, 0.6f, 0.1f, 0.95f)
-            : new Color(0.15f, 0.15f, 0.15f, 0.75f);
+            ? new Color(1f, 0.6f, 0.1f, 0.55f)
+            : new Color(0.15f, 0.15f, 0.15f, 0.28f);
         Color corBorda = pressionado
-            ? new Color(1f, 0.85f, 0.3f, 1f)
-            : new Color(1f, 0.6f, 0.1f, 0.9f);
+            ? new Color(1f, 0.85f, 0.3f, 0.75f)
+            : new Color(1f, 0.6f, 0.1f, 0.5f);
 
-        DesenharCirculo(r, corFundo, corBorda, espessuraBorda: 4f);
+        DesenharCirculo(r, corFundo, corBorda, espessuraBorda: 3f);
 
         // Seta desenhada com triângulo GL-style via GUI matrix
         float cx = r.x + r.width * 0.5f;
         float cy = r.y + r.height * 0.5f;
         float size = r.width * 0.32f;
 
-        Color corSeta = pressionado ? Color.white : new Color(1f, 0.75f, 0.2f);
+        Color corSeta = pressionado
+            ? new Color(1f, 1f, 1f, 0.9f)
+            : new Color(1f, 0.75f, 0.2f, 0.7f);
 
         // Triângulo da seta
         Vector2 ponta = new Vector2(cx + (esquerda ? -size : size), cy);
@@ -162,19 +173,21 @@ public class MobileUI : MonoBehaviour
     {
         // Fundo circular vermelho/laranja
         Color corFundo = pressionado
-            ? new Color(1f, 0.2f, 0.1f, 0.95f)
-            : new Color(0.15f, 0.05f, 0.05f, 0.75f);
+            ? new Color(1f, 0.2f, 0.1f, 0.55f)
+            : new Color(0.15f, 0.05f, 0.05f, 0.28f);
         Color corBorda = pressionado
-            ? new Color(1f, 0.6f, 0.2f, 1f)
-            : new Color(1f, 0.25f, 0.1f, 0.9f);
+            ? new Color(1f, 0.6f, 0.2f, 0.75f)
+            : new Color(1f, 0.25f, 0.1f, 0.5f);
 
-        DesenharCirculo(r, corFundo, corBorda, espessuraBorda: 4f);
+        DesenharCirculo(r, corFundo, corBorda, espessuraBorda: 3f);
 
         float cx = r.x + r.width * 0.5f;
         float cy = r.y + r.height * 0.5f;
         float size = r.width * 0.28f;
 
-        Color corIcone = pressionado ? Color.white : new Color(1f, 0.5f, 0.2f);
+        Color corIcone = pressionado
+            ? new Color(1f, 1f, 1f, 0.9f)
+            : new Color(1f, 0.5f, 0.2f, 0.7f);
 
         // Míssil: corpo
         Rect corpo = new Rect(cx - size * 0.18f, cy - size * 0.9f, size * 0.36f, size * 1.4f);
@@ -199,8 +212,8 @@ public class MobileUI : MonoBehaviour
 
         // Chama do escapamento
         Color corChama = pressionado
-            ? new Color(1f, 0.9f, 0.1f)
-            : new Color(1f, 0.55f, 0.05f);
+            ? new Color(1f, 0.9f, 0.1f, 0.9f)
+            : new Color(1f, 0.55f, 0.05f, 0.7f);
 
         Vector2 chamaBase1 = new Vector2(cx - size * 0.18f, cy + size * 0.5f);
         Vector2 chamaBase2 = new Vector2(cx + size * 0.18f, cy + size * 0.5f);

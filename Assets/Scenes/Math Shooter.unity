@@ -1286,6 +1286,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 11f26d1678564ac478953b5406d83502, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::MobileUI
+  testarComoMobileNoEditor: 0
 --- !u!4 &676034687
 Transform:
   m_ObjectHideFlags: 0
