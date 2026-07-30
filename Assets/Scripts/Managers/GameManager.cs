@@ -69,11 +69,12 @@ public class GameManager : MonoBehaviour
 
     // ── Tempo total da fase ───────────────────────────────────────────
     private float tempoInicioFase = 0f;
+    private float tempoInicioQuestao = 0f;
 
     // ── Tempo Lento ───────────────────────────────────────────────────
     private bool tempoLentoAtivo = false;
     private float tempoLentoTimer = 0f;
-    private float tempoLentoMultiplicador = 0.4f;
+    private float tempoLentoMultiplicador = 0.5f;
 
     // ── Timer de onda ─────────────────────────────────────────────────
     private float timerOnda = 0f;
@@ -84,7 +85,7 @@ public class GameManager : MonoBehaviour
     private int powerUpsSpawnadosNaFase = 0;
     private const int maxPowerUpsPorFase = 2;
 
-    private string[] nomesFase = { "", "Adição", "Subtração", "Divisão", "Multiplicação" };
+    private string[] nomesFase = { "", "Adicao", "Subtracao", "Divisao", "Multiplicacao" };
 
     // ── Helpers públicos ──────────────────────────────────────────────
     public bool IsPanelAtivo() => faseCompletaPanel.activeSelf || gameOverPanel.activeSelf;
@@ -177,6 +178,7 @@ public class GameManager : MonoBehaviour
 
     public void IniciarJogo()
     {
+        GameResultSender.instance?.IniciarNovaPartida();
         PlayerController player = FindFirstObjectByType<PlayerController>(FindObjectsInactive.Include);
         if (player != null) player.gameObject.SetActive(true);
 
@@ -209,6 +211,7 @@ public class GameManager : MonoBehaviour
         Time.timeScale = 1f;
         score = 0;
         faseAtual = faseAoErrar;
+        GameResultSender.instance?.IncrementarTentativa(faseAtual);
         ondasCompletas = 0;
         isBossWave = false;
         historicoContas.Clear();
@@ -536,6 +539,7 @@ public class GameManager : MonoBehaviour
 
         questionText.text = perguntaAtual;
         historicoContas.Add(perguntaAtual + correctAnswer);
+        tempoInicioQuestao = Time.time;
     }
 
     void GerarPerguntaBoss()
@@ -589,6 +593,7 @@ public class GameManager : MonoBehaviour
         }
 
         historicoContas.Add(perguntaAtual + correctAnswer);
+        tempoInicioQuestao = Time.time;
     }
 
     float[] GerarPosicoesX(int quantidade)
@@ -644,6 +649,12 @@ public class GameManager : MonoBehaviour
                 EfeitosManager.instance.EfeitoAcerto(Vector3.zero);
 
             historicoAcertos.Add(true);
+
+            GameResultSender.instance?.EnviarQuestaoAtual(
+                faseAtual, nomesFase[faseAtual], ondasCompletas + 1,
+                perguntaAtual, correctAnswer.ToString(), number.ToString(),
+                true, Time.time - tempoInicioQuestao
+            );
             ondasCompletas++;
             AtualizarUI();
             TentarSpawnPowerUp();
@@ -669,6 +680,12 @@ public class GameManager : MonoBehaviour
 
             // Registra operação errada
             operacoesErradas.Add(perguntaAtual + correctAnswer);
+
+            GameResultSender.instance?.EnviarQuestaoAtual(
+                faseAtual, nomesFase[faseAtual], ondasCompletas + 1,
+                perguntaAtual, correctAnswer.ToString(), number.ToString(),
+                false, Time.time - tempoInicioQuestao
+            );
 
             PlayerController player = FindFirstObjectByType<PlayerController>();
             if (player != null && player.TemEscudo())
