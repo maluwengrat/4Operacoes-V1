@@ -53,6 +53,8 @@ public class GameManager : MonoBehaviour
     private List<bool> historicoAcertos = new();
     private List<string> operacoesErradas = new();
     private HashSet<string> perguntasUsadas = new HashSet<string>();
+    private Dictionary<int, int> acertosPorFase = new();
+    private Dictionary<int, int> totalRespostasPorFase = new();
 
     private int correctAnswer = 0;
     private int score = 0;
@@ -135,7 +137,7 @@ public class GameManager : MonoBehaviour
             timerOnda -= Time.deltaTime * fatorTimer;
             AtualizarTimerUI();
 
-        if (timerOnda <= 0f)
+            if (timerOnda <= 0f)
             {
                 timerAtivo = false;
                 timerText.gameObject.SetActive(false);
@@ -190,6 +192,8 @@ public class GameManager : MonoBehaviour
         historicoAcertos.Clear();
         operacoesErradas.Clear();
         perguntasUsadas.Clear();
+        acertosPorFase.Clear();
+        totalRespostasPorFase.Clear();
         powerUpsSpawnadosNaFase = 0;
         tempoInicioFase = Time.time;
 
@@ -284,6 +288,8 @@ public class GameManager : MonoBehaviour
         historicoContas.Clear();
         historicoAcertos.Clear();
 
+        GameResultSender.instance?.IncrementarTentativa(faseAtual);
+
         MostrarSomente(null);
         hudPanel.SetActive(true);
 
@@ -295,55 +301,6 @@ public class GameManager : MonoBehaviour
         SpawnWave();
     }
 
-    // ─────────────────────────────────────────────────────────────────
-    // Envio de resultado para a plataforma
-    // ─────────────────────────────────────────────────────────────────
-
-    public void EnviarResultadoParcial()
-    {
-        if (GameResultSender.instance == null) return;
-
-        int acertos = 0;
-        foreach (var a in historicoAcertos) if (a) acertos++;
-        int erros = historicoAcertos.Count - acertos;
-        int aproveitamento = historicoAcertos.Count > 0
-            ? Mathf.RoundToInt((float)acertos / historicoAcertos.Count * 100) : 0;
-        int tempoTotal = Mathf.RoundToInt(Time.time - tempoInicioFase);
-
-        var erradasEscapadas = new List<string>();
-        foreach (var op in operacoesErradas)
-            erradasEscapadas.Add("\"" + op.Replace("\"", "\\\"") + "\"");
-        string operacoesJson = "[" + string.Join(",", erradasEscapadas) + "]";
-
-        GameResultSender.instance.Enviar(
-            faseAtual, score, acertos, erros,
-            aproveitamento, tempoTotal,
-            operacoesJson, false // ← concluiu_fase = false
-        );
-    }
-
-    void EnviarResultado(bool concluiuFase)
-    {
-        if (GameResultSender.instance == null) return;
-
-        int acertos = 0;
-        foreach (var a in historicoAcertos) if (a) acertos++;
-        int erros = historicoAcertos.Count - acertos;
-        int aproveitamento = historicoAcertos.Count > 0
-            ? Mathf.RoundToInt((float)acertos / historicoAcertos.Count * 100) : 0;
-        int tempoTotal = Mathf.RoundToInt(Time.time - tempoInicioFase);
-
-        var erradasEscapadas = new List<string>();
-        foreach (var op in operacoesErradas)
-            erradasEscapadas.Add("\"" + op.Replace("\"", "\\\"") + "\"");
-        string operacoesJson = "[" + string.Join(",", erradasEscapadas) + "]";
-
-        GameResultSender.instance.Enviar(
-            faseAtual, score, acertos, erros,
-            aproveitamento, tempoTotal,
-            operacoesJson, concluiuFase
-        );
-    }
     public void VoltarAoMenu()
     {
         jogoIniciado = false;
@@ -636,8 +593,14 @@ public class GameManager : MonoBehaviour
     {
         if (!jogoIniciado) return;
 
+        if (!totalRespostasPorFase.ContainsKey(faseAtual)) totalRespostasPorFase[faseAtual] = 0;
+        totalRespostasPorFase[faseAtual]++;
+
         if (number == correctAnswer)
         {
+            if (!acertosPorFase.ContainsKey(faseAtual)) acertosPorFase[faseAtual] = 0;
+            acertosPorFase[faseAtual]++;
+
             timerAtivo = false;
             timerText.gameObject.SetActive(false);
 
@@ -742,8 +705,6 @@ public class GameManager : MonoBehaviour
 
     public void ExecutarGameOver()
     {
-        // Envia resultado (fase não concluída)
-        EnviarResultado(false);
 
         FeedbackManager.instance.Esconder();
         hudPanel.SetActive(false);
@@ -779,9 +740,6 @@ public class GameManager : MonoBehaviour
             ? Mathf.RoundToInt((float)acertos / historicoAcertos.Count * 100) : 0;
 
         faseAprovada = percentual == 100;
-
-        // Envia resultado (fase concluída)
-        EnviarResultado(faseAprovada);
 
         faseTituloText.text = faseAprovada
             ? $"FASE {faseAtual} COMPLETA!"
@@ -832,13 +790,47 @@ public class GameManager : MonoBehaviour
 
         faseAprovada = true;
 
-        // Envia resultado final
-        EnviarResultado(true);
-
         faseTituloText.text = "PARABÉNS!";
         faseDescText.text = $"Você completou todas as fases!\n\n"
                           + $"Pontuação final: {score}\n"
                           + $"Aproveitamento: {percentual}%";
+
+        // ── Monta e envia o relatório final (planilha nova) ──────────────
+        int pf1 = acertosPorFase.GetValueOrDefault(1, 0);
+        int pf2 = acertosPorFase.GetValueOrDefault(2, 0);
+        int pf3 = acertosPorFase.GetValueOrDefault(3, 0);
+        int pf4 = acertosPorFase.GetValueOrDefault(4, 0);
+
+        int tr1 = totalRespostasPorFase.GetValueOrDefault(1, 0);
+        int tr2 = totalRespostasPorFase.GetValueOrDefault(2, 0);
+        int tr3 = totalRespostasPorFase.GetValueOrDefault(3, 0);
+        int tr4 = totalRespostasPorFase.GetValueOrDefault(4, 0);
+
+        float pc1 = tr1 > 0 ? (float)pf1 / tr1 : 0f;
+        float pc2 = tr2 > 0 ? (float)pf2 / tr2 : 0f;
+        float pc3 = tr3 > 0 ? (float)pf3 / tr3 : 0f;
+        float pc4 = tr4 > 0 ? (float)pf4 / tr4 : 0f;
+
+        int tent1 = GameResultSender.instance != null ? GameResultSender.instance.GetTentativaFinal(1) : 1;
+        int tent2 = GameResultSender.instance != null ? GameResultSender.instance.GetTentativaFinal(2) : 1;
+        int tent3 = GameResultSender.instance != null ? GameResultSender.instance.GetTentativaFinal(3) : 1;
+        int tent4 = GameResultSender.instance != null ? GameResultSender.instance.GetTentativaFinal(4) : 1;
+
+        int pontuacaoTotal = pf1 + pf2 + pf3 + pf4;
+        int totalRespostas = tr1 + tr2 + tr3 + tr4;
+        float percentTotalPontos = totalRespostas > 0 ? (float)pontuacaoTotal / totalRespostas : 0f;
+
+        int somaTentativas = tent1 + tent2 + tent3 + tent4;
+        float percentTotalFases = somaTentativas > 0 ? 4f / somaTentativas : 0f;
+
+        GameResultSender.instance?.EnviarRelatorioFinal(
+            pf1, pc1, tent1,
+            pf2, pc2, tent2,
+            pf3, pc3, tent3,
+            pf4, pc4, tent4,
+            pontuacaoTotal, percentTotalPontos, percentTotalFases
+        );
+        // ───────────────────────────────────────────────────────────────
 
         historicoContas.Clear();
         historicoAcertos.Clear();

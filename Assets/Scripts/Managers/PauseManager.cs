@@ -47,10 +47,6 @@ public class PauseManager : MonoBehaviour
         var inimigos = GameObject.FindObjectsByType<Enemy>(FindObjectsInactive.Exclude);
         foreach (var e in inimigos) Destroy(e.gameObject);
 
-        // Envia resultado parcial como não concluída
-        if (GameManager.instance != null)
-            GameManager.instance.EnviarResultadoParcial();
-
         // Volta ao menu
         if (GameManager.instance != null)
             GameManager.instance.VoltarAoMenu();
