@@ -314,6 +314,13 @@ public class GameManager : MonoBehaviour
         timerText.gameObject.SetActive(false);
         questionText.gameObject.SetActive(false);
         if (bossQuestionText != null) bossQuestionText.gameObject.SetActive(false);
+
+        // ADICIONADO: desativa a nave e destrói inimigos/power-ups restantes
+        PlayerController player = FindFirstObjectByType<PlayerController>(FindObjectsInactive.Include);
+        if (player != null) player.gameObject.SetActive(false);
+        foreach (var e in FindAll<Enemy>()) Destroy(e.gameObject);
+        foreach (var p in FindObjectsByType<PowerUp>(FindObjectsInactive.Exclude)) Destroy(p.gameObject);
+
         MostrarSomente(menuPrincipalPanel);
         if (BackgroundManager.Instance != null) BackgroundManager.Instance.SetMainMenu();
         if (SoundManager.instance != null) SoundManager.instance.PararMusica();
