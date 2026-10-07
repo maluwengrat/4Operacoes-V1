@@ -57,6 +57,7 @@ public class GameManager : MonoBehaviour
     private Dictionary<int, int> totalRespostasPorFase = new();
 
     private int correctAnswer = 0;
+    private int ultimaResposta = -1; // evita duas ondas seguidas com o mesmo resultado
     private int score = 0;
     private bool jogoIniciado = false;
     private int faseAtual = 1;
@@ -391,6 +392,7 @@ public class GameManager : MonoBehaviour
         {
             perguntasUsadas.Clear();
             powerUpsSpawnadosNaFase = 0;
+            ultimaResposta = -1; // NOVO
         }
 
         tempoLentoAtivo = false;
@@ -491,6 +493,7 @@ public class GameManager : MonoBehaviour
     {
         a = 0; b = 0;
         int tentativas = 0;
+        string chave = "";
 
         do
         {
@@ -500,27 +503,33 @@ public class GameManager : MonoBehaviour
                     a = Random.Range(1, 5); b = Random.Range(1, 9 - a + 1);
                     correctAnswer = a + b;
                     perguntaAtual = $"{a} + {b}";
+                    chave = $"{Mathf.Min(a, b)}+{Mathf.Max(a, b)}"; // 8+2 = 2+8
                     break;
                 case 2:
                     correctAnswer = Random.Range(1, 9); b = Random.Range(1, 9);
                     a = correctAnswer + b;
                     perguntaAtual = $"{a} - {b}";
+                    chave = perguntaAtual;
                     break;
                 case 3:
-                    correctAnswer = Random.Range(1, 9); b = Random.Range(2, 9);
+                    correctAnswer = Random.Range(2, 9); b = Random.Range(2, 9); // sem quociente 1
                     a = b * correctAnswer;
                     perguntaAtual = $"{a} ÷ {b}";
+                    chave = perguntaAtual;
                     break;
                 case 4:
-                    a = Random.Range(1, 4); b = Random.Range(1, 9 / a + 1);
+                    a = Random.Range(2, 10); b = Random.Range(2, 10); // sem ×1
                     correctAnswer = a * b;
                     perguntaAtual = $"{a} × {b}";
+                    chave = $"{Mathf.Min(a, b)}x{Mathf.Max(a, b)}"; // 3×4 = 4×3
                     break;
             }
             tentativas++;
-        } while (perguntasUsadas.Contains(perguntaAtual) && tentativas < 30);
+        }
+        while ((perguntasUsadas.Contains(chave) || correctAnswer == ultimaResposta) && tentativas < 50);
 
-        perguntasUsadas.Add(perguntaAtual);
+        perguntasUsadas.Add(chave);
+        ultimaResposta = correctAnswer;
 
         questionText.gameObject.SetActive(true);
         if (bossQuestionText != null)
@@ -533,41 +542,57 @@ public class GameManager : MonoBehaviour
 
     void GerarPerguntaBoss()
     {
-        int a, b, c;
+        int a = 0, b = 0, c = 0;
+        int tentativas = 0;
+        string chave = "";
 
-        switch (faseAtual)
+        do
         {
-            case 1:
-                a = Random.Range(1, 4); b = Random.Range(1, 4);
-                c = Random.Range(1, 9 - a - b + 1);
-                correctAnswer = a + b + c;
-                perguntaAtual = $"{a} + {b} + {c}";
-                break;
-            case 2:
-                correctAnswer = Random.Range(1, 5);
-                b = Random.Range(1, 4); c = Random.Range(1, 4);
-                a = correctAnswer + b + c;
-                perguntaAtual = $"{a} - {b} - {c}";
-                break;
-            case 3: // Divisão — (a ÷ b) + c com b sendo 8 ou 9
-                b = Random.Range(0, 2) == 0 ? 8 : 9;
-                int quoc = Random.Range(1, 5);
-                a = b * quoc;
-                c = Random.Range(1, 6);
-                correctAnswer = quoc + c;
-                perguntaAtual = $"({a} ÷ {b}) + {c}";
-                break;
-            case 4: // Multiplicação — (a × b) + c com a sendo 8 ou 9
-                a = Random.Range(0, 2) == 0 ? 8 : 9;
-                b = Random.Range(1, 5);
-                c = Random.Range(1, 6);
-                correctAnswer = (a * b) + c;
-                perguntaAtual = $"({a} × {b}) + {c}";
-                break;
-            default:
-                GerarPergunta(out a, out b);
-                return;
+            switch (faseAtual)
+            {
+                case 1:
+                    a = Random.Range(1, 4); b = Random.Range(1, 4);
+                    c = Random.Range(1, 9 - a - b + 1);
+                    correctAnswer = a + b + c;
+                    perguntaAtual = $"{a} + {b} + {c}";
+                    int[] t = { a, b, c };
+                    System.Array.Sort(t);
+                    chave = $"B{t[0]}+{t[1]}+{t[2]}";
+                    break;
+                case 2:
+                    correctAnswer = Random.Range(1, 5);
+                    b = Random.Range(1, 4); c = Random.Range(1, 4);
+                    a = correctAnswer + b + c;
+                    perguntaAtual = $"{a} - {b} - {c}";
+                    chave = $"B{a}-{Mathf.Min(b, c)}-{Mathf.Max(b, c)}";
+                    break;
+                case 3:
+                    b = Random.Range(0, 2) == 0 ? 8 : 9;
+                    int quoc = Random.Range(2, 5); // sem quociente 1
+                    a = b * quoc;
+                    c = Random.Range(1, 6);
+                    correctAnswer = quoc + c;
+                    perguntaAtual = $"({a} ÷ {b}) + {c}";
+                    chave = "B" + perguntaAtual;
+                    break;
+                case 4:
+                    a = Random.Range(0, 2) == 0 ? 8 : 9;
+                    b = Random.Range(2, 5); // sem ×1
+                    c = Random.Range(1, 6);
+                    correctAnswer = (a * b) + c;
+                    perguntaAtual = $"({a} × {b}) + {c}";
+                    chave = "B" + perguntaAtual;
+                    break;
+                default:
+                    GerarPergunta(out a, out b);
+                    return;
+            }
+            tentativas++;
         }
+        while ((perguntasUsadas.Contains(chave) || correctAnswer == ultimaResposta) && tentativas < 50);
+
+        perguntasUsadas.Add(chave);
+        ultimaResposta = correctAnswer;
 
         if (bossQuestionText != null)
         {
